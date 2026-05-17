@@ -4,13 +4,13 @@ import ApiError from "../utils/ApiErrors.ts";
 
 export const validate = (dto: typeof BaseDto) => {
   return (req: Request, _: Response, next: NextFunction) => {
-    const { success, error, value } = dto.validate(req.body);
+    const { success, errors, data } = dto.validate(req.body);
 
     if (!success) {
-      return next(ApiError.badRequest(error ?? "Invalid request body"));
+      return next(ApiError.badRequest(errors ?? "Invalid request body"));
     }
 
-    req.body = value;
+    req.body = data;
     next();
   };
 };

@@ -1,19 +1,31 @@
 import { type, Type } from "arktype";
 
+type ValidationResult =
+  | {
+      success: true;
+      errors: null;
+      data: unknown;
+    }
+  | {
+      success: false;
+      errors: string;
+      data: null;
+    };
+
 export abstract class BaseDto {
   static schema: Type<any>;
 
-  static validate(data: unknown) {
+  static validate(data: unknown): ValidationResult {
     const result = this.schema(data);
 
     if (result instanceof type.errors) {
       return {
         success: false,
-        error: result.summary,
-        value: null,
+        errors: result.summary,
+        data: null,
       };
     }
 
-    return { success: true, error: null, value: result };
+    return { success: true, errors: null, data: result };
   }
 }
