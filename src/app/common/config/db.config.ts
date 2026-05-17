@@ -13,3 +13,11 @@ const pool = new pg.Pool({
 });
 
 export const db = drizzle(pool);
+
+export async function connectDB() {
+  try {
+    await pool.query("SELECT 1");
+  } catch (err) {
+    throw new Error("Failed to connect the database", { cause: err });
+  }
+}
