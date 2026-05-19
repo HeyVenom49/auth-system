@@ -9,3 +9,5 @@ export class RegisterDto extends BaseDto {
     role: "'customer'",
   }).onUndeclaredKey("reject");
 }
+
+export type RegisterDtoType = typeof RegisterDto.schema.infer;
