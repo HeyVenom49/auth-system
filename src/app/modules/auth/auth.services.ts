@@ -4,9 +4,15 @@ import ApiError from "../../common/utils/ApiErrors.ts";
 import { users } from "./auth.model.ts";
 import type { RegisterDtoType } from "./dto/register.dto.ts";
 import bcrypt from "bcryptjs";
-import { generateVerificationToken } from "../../common/utils/jwt.ts";
+import {
+  generateAccessToken,
+  generateRefreshToken,
+  generateVerificationToken,
+  generateHash,
+} from "../../common/utils/jwt.ts";
 import { sendMail } from "../../common/config/email.config.ts";
 import { verificationTemplate } from "../../common/utils/email.templates.ts";
+import type { LoginDtoType } from "./dto/login.dto.ts";
 
 const register = async ({
   username,
@@ -55,4 +61,34 @@ const register = async ({
   return user;
 };
 
-export { register };
+const signin = async ({ username, password }: LoginDtoType) => {
+  const [user] = await db
+    .select()
+    .from(users)
+    .where(
+      username.includes("@")
+        ? eq(users.email, username)
+        : eq(users.username, username),
+    )
+    .limit(1);
+
+  if (!user) throw ApiError.badRequest("Invalid credentials");
+
+  const isPasswordCorrect = await bcrypt.compare(password, user.password);
+
+  if (!isPasswordCorrect) throw ApiError.badRequest("Invalid credentials");
+
+  if (!user.isVerified)
+    throw ApiError.forbidden("Please verify your email before login");
+
+  const accessToken = generateAccessToken({
+    username: user.username,
+    email: user.email,
+    role: user.role,
+  });
+  const refreshToken = generateRefreshToken({ id: user.id });
+
+  user.refreshToken = generateHash(refreshToken);
+};
+
+export { register, signin };
