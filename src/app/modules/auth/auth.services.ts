@@ -95,7 +95,7 @@ const signin = async ({ username, password }: LoginDtoType) => {
     .set({
       refreshToken: hashedRefreshToken,
 
-      refreshTokenExpiresAt: new Date(Date.now() * 7 * 24 * 60 * 60 * 1000),
+      refreshTokenExpiresAt: new Date(Date.now() * 5 * 24 * 60 * 60 * 1000),
     })
     .where(eq(users.id, user.id));
 
@@ -111,4 +111,37 @@ const signin = async ({ username, password }: LoginDtoType) => {
   };
 };
 
-export { register, signin };
+const verifyEmail = async (token: string) => {
+  const trimmed = String(token).trim();
+
+  if (!trimmed)
+    throw ApiError.badRequest("Invalid or expire verification token");
+
+  const hashedToken = generateHash(trimmed);
+  const [user] = await db
+    .select()
+    .from(users)
+    .where(eq(users.verificationToken, hashedToken))
+    .limit(1);
+
+  if (!user) throw ApiError.badRequest("Invalid Token");
+
+  if (
+    !user.verificationTokenExpiresAt ||
+    user.verificationTokenExpiresAt < new Date()
+  ) {
+    throw ApiError.badRequest("Token is expired");
+  }
+
+  await db
+    .update(users)
+    .set({
+      isVerified: true,
+      verificationToken: null,
+      verificationTokenExpiresAt: null,
+    })
+    .where(eq(users.id, user.id));
+  return { user };
+};
+
+export { register, signin, verifyEmail };

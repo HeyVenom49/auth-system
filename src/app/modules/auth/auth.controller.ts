@@ -11,11 +11,29 @@ const login = async (req: Request, res: Response): Promise<void> => {
   const { accessToken, refreshToken, user } = await service.signin(req.body);
   res.cookie(refreshToken, "refreshToken", {
     httpOnly: true,
-    maxAge: 5 * 24 * 60 * 1000,
+    maxAge: 5 * 24 * 60 * 60 * 1000,
+    secure: process.env.ENVIRONMENT === "production",
+  });
+  res.cookie(accessToken, "accessToken", {
+    httpOnly: true,
+    maxAge: 15 * 60 * 1000,
+    sameSite: "strict",
     secure: process.env.ENVIRONMENT === "production",
   });
 
-  ApiResponse.ok(res, "Login successful", { user, accessToken });
+  ApiResponse.ok(res, "Login successful", user);
 };
 
-export { register, login };
+type VerifyEmailPattern = {
+  token: string;
+};
+
+const verifyEmail = async (
+  req: Request<VerifyEmailPattern>,
+  res: Response,
+): Promise<void> => {
+  const user = await service.verifyEmail(req.params.token);
+  ApiResponse.ok(res, "Token verifies successfully", user);
+};
+
+export { register, login, verifyEmail };

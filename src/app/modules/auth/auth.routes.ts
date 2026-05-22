@@ -8,5 +8,6 @@ const router = Router();
 
 router.post("/register", validate(RegisterDto), controller.register);
 router.post("/login", validate(LoginDto), controller.login);
+router.get("/verify-email/:token", controller.verifyEmail);
 
 export default router;
