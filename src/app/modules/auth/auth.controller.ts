@@ -7,4 +7,15 @@ const register = async (req: Request, res: Response): Promise<void> => {
   ApiResponse.created(res, "Register", user);
 };
 
-export { register };
+const login = async (req: Request, res: Response): Promise<void> => {
+  const { accessToken, refreshToken, user } = await service.signin(req.body);
+  res.cookie(refreshToken, "refreshToken", {
+    httpOnly: true,
+    maxAge: 5 * 24 * 60 * 1000,
+    secure: process.env.ENVIRONMENT === "production",
+  });
+
+  ApiResponse.ok(res, "Login successful", { user, accessToken });
+};
+
+export { register, login };

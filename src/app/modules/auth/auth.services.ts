@@ -88,7 +88,27 @@ const signin = async ({ username, password }: LoginDtoType) => {
   });
   const refreshToken = generateRefreshToken({ id: user.id });
 
-  user.refreshToken = generateHash(refreshToken);
+  const hashedRefreshToken = generateHash(refreshToken);
+
+  await db
+    .update(users)
+    .set({
+      refreshToken: hashedRefreshToken,
+
+      refreshTokenExpiresAt: new Date(Date.now() * 7 * 24 * 60 * 60 * 1000),
+    })
+    .where(eq(users.id, user.id));
+
+  return {
+    accessToken,
+    refreshToken,
+    user: {
+      id: user.id,
+      username: user.username,
+      email: user.email,
+      role: user.role,
+    },
+  };
 };
 
 export { register, signin };
