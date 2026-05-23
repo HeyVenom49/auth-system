@@ -38,4 +38,14 @@ const authenticate = async (
   next();
 };
 
-export { authenticate };
+const authorize = async (...roles: string[]) => {
+  return (req: Request, _: Response, next: NextFunction) => {
+    if (!roles.includes(req.user.role))
+      throw ApiError.forbidden(
+        "You do not have permission to perform this action",
+      );
+    next();
+  };
+};
+
+export { authenticate, authorize };
