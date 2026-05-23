@@ -144,4 +144,14 @@ const verifyEmail = async (token: string) => {
   return { user };
 };
 
-export { register, signin, verifyEmail };
+const logout = async (id: number) => {
+  await db
+    .update(users)
+    .set({
+      refreshToken: null,
+      refreshTokenExpiresAt: null,
+    })
+    .where(eq(users.id, id));
+};
+
+export { register, signin, verifyEmail, logout };

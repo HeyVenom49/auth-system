@@ -36,4 +36,10 @@ const verifyEmail = async (
   ApiResponse.ok(res, "Token verifies successfully", user);
 };
 
-export { register, login, verifyEmail };
+const logout = async (req: Request, res: Response): Promise<void> => {
+  await service.logout(req.user.id);
+  res.clearCookie("refreshToken");
+  res.clearCookie("accessToken");
+};
+
+export { register, login, verifyEmail, logout };
