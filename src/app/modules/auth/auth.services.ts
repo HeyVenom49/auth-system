@@ -9,10 +9,12 @@ import {
   generateRefreshToken,
   generateVerificationToken,
   generateHash,
+  verifyRefreshToken,
 } from "../../common/utils/jwt.ts";
 import { sendMail } from "../../common/config/email.config.ts";
 import { verificationTemplate } from "../../common/utils/email.templates.ts";
 import type { LoginDtoType } from "./dto/login.dto.ts";
+import type { JwtPayloadType } from "../../../types/auth.ts";
 
 const register = async ({
   username,
@@ -154,4 +156,29 @@ const logout = async (id: number) => {
     .where(eq(users.id, id));
 };
 
-export { register, signin, verifyEmail, logout };
+const refresh = async (token: string) => {
+  if (!token) throw ApiError.unauthorized("Refresh Token missing");
+
+  const decoded = verifyRefreshToken(token) as JwtPayloadType;
+
+  const [user] = await db
+    .select()
+    .from(users)
+    .where(eq(users.id, decoded.id))
+    .limit(1);
+
+  if (!user) throw ApiError.unauthorized("User not found");
+
+  if (!user.refreshToken || user.refreshToken !== generateHash(token))
+    throw ApiError.unauthorized("Invalid refresh token");
+
+  const accessToken = generateAccessToken({
+    username: user.username,
+    email: user.email,
+    role: user.role,
+  });
+
+  return { accessToken };
+};
+
+export { register, signin, verifyEmail, logout, refresh };

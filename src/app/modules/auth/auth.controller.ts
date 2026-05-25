@@ -42,4 +42,10 @@ const logout = async (req: Request, res: Response): Promise<void> => {
   res.clearCookie("accessToken");
 };
 
-export { register, login, verifyEmail, logout };
+const refresh = async (req: Request, res: Response): Promise<void> => {
+  const token = req.cookies?.refreshToken;
+  const { accessToken } = await service.refresh(token);
+  ApiResponse.ok(res, "Token refresh", { accessToken });
+};
+
+export { register, login, verifyEmail, logout, refresh };
