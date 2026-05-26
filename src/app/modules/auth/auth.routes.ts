@@ -4,6 +4,7 @@ import { RegisterDto } from "./dto/register.dto.ts";
 import * as controller from "./auth.controller.ts";
 import { LoginDto } from "./dto/login.dto.ts";
 import { authenticate } from "./auth.middleware.ts";
+import { ForgotPasswordDto } from "./dto/forgotPassword.dto.ts";
 
 const router = Router();
 
@@ -13,5 +14,10 @@ router.post("/logout", authenticate, controller.logout);
 router.get("/verify-email/:token", controller.verifyEmail);
 router.post("/refresh-token", controller.refresh);
 router.get("/me", authenticate, controller.getMe);
+router.post(
+  "/forgot-password",
+  validate(ForgotPasswordDto),
+  controller.forgotPassword,
+);
 
 export default router;

@@ -10,9 +10,13 @@ import {
   generateVerificationToken,
   generateHash,
   verifyRefreshToken,
+  generateResetPasswordToken,
 } from "../../common/utils/jwt.ts";
 import { sendMail } from "../../common/config/email.config.ts";
-import { verificationTemplate } from "../../common/utils/email.templates.ts";
+import {
+  forgotPasswordTemplate,
+  verificationTemplate,
+} from "../../common/utils/email.templates.ts";
 import type { LoginDtoType } from "./dto/login.dto.ts";
 import type { JwtPayloadType } from "../../../types/auth.ts";
 
@@ -48,7 +52,7 @@ const register = async ({
     verificationUrl: `${process.env.CLIENT_URL}/verify/${rawToken}`,
   });
 
-  sendMail({
+  await sendMail({
     to: email,
     subject: "Verify your email",
     html,
@@ -198,4 +202,47 @@ const getMe = async (id: number) => {
   return user;
 };
 
-export { register, signin, verifyEmail, logout, refresh, getMe };
+const forgotPassword = async (email: string) => {
+  const [user] = await db
+    .select()
+    .from(users)
+    .where(eq(users.email, email))
+    .limit(1);
+  if (!user) {
+    return {
+      success: true,
+      message: "If account exist, reset email sent",
+    };
+  }
+
+  const { rawToken, hashedToken } = generateResetPasswordToken();
+
+  await db
+    .update(users)
+    .set({
+      resetPasswordToken: hashedToken,
+      resetPasswordExpiresAt: new Date(Date.now() * 10 * 60 * 1000),
+    })
+    .where(eq(users.id, user.id));
+
+  const html = forgotPasswordTemplate({
+    username: user.username,
+    resetUrl: `${process.env.CLIENT_URL}/forgot-Password/${rawToken}`,
+  });
+
+  await sendMail({
+    to: user.email,
+    subject: "For your reset password",
+    html,
+  });
+};
+
+export {
+  register,
+  signin,
+  verifyEmail,
+  logout,
+  refresh,
+  getMe,
+  forgotPassword,
+};

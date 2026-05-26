@@ -53,4 +53,9 @@ const getMe = async (req: Request, res: Response): Promise<void> => {
   ApiResponse.ok(res, "User Profile", user);
 };
 
-export { register, login, verifyEmail, logout, refresh, getMe };
+const forgotPassword = async (req: Request, res: Response): Promise<void> => {
+  await service.forgotPassword(req.user.email);
+  ApiResponse.ok(res, "Password reset email sent");
+};
+
+export { register, login, verifyEmail, logout, refresh, getMe, forgotPassword };
