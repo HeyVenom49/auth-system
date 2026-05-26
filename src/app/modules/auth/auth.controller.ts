@@ -58,4 +58,29 @@ const forgotPassword = async (req: Request, res: Response): Promise<void> => {
   ApiResponse.ok(res, "Password reset email sent");
 };
 
-export { register, login, verifyEmail, logout, refresh, getMe, forgotPassword };
+type ResetPasswordParams = {
+  token: string;
+};
+
+type ResetPasswordBody = {
+  password: string;
+};
+
+const resetPassword = async (
+  req: Request<ResetPasswordParams, unknown, ResetPasswordBody>,
+  res: Response,
+): Promise<void> => {
+  await service.resetPassword(req.params.token, req.body.password);
+  ApiResponse.ok(res, "Password reset successful");
+};
+
+export {
+  register,
+  login,
+  verifyEmail,
+  logout,
+  refresh,
+  getMe,
+  forgotPassword,
+  resetPassword,
+};

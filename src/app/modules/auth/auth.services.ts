@@ -1,4 +1,4 @@
-import { eq, or } from "drizzle-orm";
+import { eq, or, gt, and } from "drizzle-orm";
 import { db } from "../../common/config/db.config.ts";
 import ApiError from "../../common/utils/ApiErrors.ts";
 import { users } from "./auth.model.ts";
@@ -237,6 +237,36 @@ const forgotPassword = async (email: string) => {
   });
 };
 
+const resetPassword = async (token: string, newPassword: string) => {
+  const hashedToken = generateHash(token);
+
+  const [user] = await db
+    .select({
+      id: users.id,
+      resetPasswordToken: users.resetPasswordToken,
+      resetPasswordTokenExpireAt: users.resetPasswordExpiresAt,
+    })
+    .from(users)
+    .where(
+      and(
+        eq(users.resetPasswordToken, hashedToken),
+        gt(users.resetPasswordExpiresAt, new Date()),
+      ),
+    )
+    .limit(1);
+
+  if (!user) throw ApiError.badRequest("Invalid or Expire reset token");
+
+  await db
+    .update(users)
+    .set({
+      password: newPassword,
+      resetPasswordToken: undefined,
+      resetPasswordExpiresAt: undefined,
+    })
+    .where(eq(users.id, user.id));
+};
+
 export {
   register,
   signin,
@@ -245,4 +275,5 @@ export {
   refresh,
   getMe,
   forgotPassword,
+  resetPassword,
 };
