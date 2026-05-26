@@ -239,6 +239,7 @@ const forgotPassword = async (email: string) => {
 
 const resetPassword = async (token: string, newPassword: string) => {
   const hashedToken = generateHash(token);
+  const hashedPassword = generateHash(newPassword);
 
   const [user] = await db
     .select({
@@ -260,7 +261,7 @@ const resetPassword = async (token: string, newPassword: string) => {
   await db
     .update(users)
     .set({
-      password: newPassword,
+      password: hashedPassword,
       resetPasswordToken: undefined,
       resetPasswordExpiresAt: undefined,
     })
