@@ -1,15 +1,17 @@
 # Auth System
 
-A TypeScript authentication API built with Express, PostgreSQL, Drizzle ORM, Bun, and JWT-based auth.
+Authentication API built with TypeScript, Express 5, PostgreSQL, Drizzle ORM, Bun, JWT, and Nodemailer.
 
 ## Features
 
-- User registration with schema validation
-- Email verification flow with hashed verification tokens
-- Login with access and refresh token generation
-- Protected logout route
-- PostgreSQL persistence with Drizzle ORM
-- Docker Compose setup for local Postgres
+- User registration with ArkType request validation
+- Email verification with hashed verification tokens
+- Login with access token and refresh token flow
+- Protected profile lookup with `/me`
+- Logout with stored refresh token invalidation
+- Forgot-password and reset-password flow
+- PostgreSQL persistence through Drizzle ORM
+- Docker Compose support for local database setup
 
 ## Tech Stack
 
@@ -18,7 +20,7 @@ A TypeScript authentication API built with Express, PostgreSQL, Drizzle ORM, Bun
 - Bun
 - PostgreSQL
 - Drizzle ORM
-- JSON Web Tokens
+- JSON Web Token
 - Nodemailer
 - ArkType
 
@@ -43,6 +45,8 @@ src/
   types/
   app.ts
   index.ts
+docker-compose.yml
+drizzle.config.js
 ```
 
 ## Prerequisites
@@ -56,7 +60,7 @@ src/
 Create a `.env` file in the project root.
 
 ```env
-PORT=5001
+PORT=7000|5000
 ENVIRONMENT=development
 
 POSTGRES_USERNAME=admin
@@ -78,30 +82,30 @@ MAIL_PASSWORD=your_app_password
 CLIENT_URL=http://localhost:5173
 ```
 
-`CLIENT_URL` is used to generate the email verification link.
+`CLIENT_URL` is used to build email verification and password reset links.
 
 ## Getting Started
 
-1. Install dependencies:
+1. Install dependencies.
 
 ```bash
 bun install
 ```
 
-2. Start PostgreSQL:
+2. Start PostgreSQL.
 
 ```bash
 docker compose up -d
 ```
 
-3. Generate and run migrations:
+3. Generate and apply migrations.
 
 ```bash
 bun run db:generate
 bun run db:migrate
 ```
 
-4. Start the development server:
+4. Start the development server.
 
 ```bash
 bun run dev
@@ -116,15 +120,27 @@ The API starts after a successful database connection.
 - `bun run start` - Run the compiled server
 - `bun run studio` - Open Drizzle Studio
 - `bun run db:generate` - Generate Drizzle migrations
-- `bun run db:migrate` - Apply migrations
+- `bun run db:migrate` - Apply Drizzle migrations
 
-## API Endpoints
+## API Overview
 
-Base path: `/api/auth`
+Base URL: `http://localhost:7000/api/auth`
+
+All responses use this shape:
+
+```json
+{
+  "status": true,
+  "message": "successful",
+  "data": {}
+}
+```
+
+## Auth Endpoints
 
 ### `POST /register`
 
-Registers a new user and sends a verification email.
+Create a new user and send an email verification link.
 
 Request body:
 
@@ -137,9 +153,14 @@ Request body:
 }
 ```
 
+Notes:
+
+- `role` currently accepts only `"customer"`.
+- Email verification is required before login.
+
 ### `POST /login`
 
-Logs in a verified user.
+Login with username or email plus password.
 
 Request body:
 
@@ -153,23 +174,74 @@ Request body:
 Notes:
 
 - The `username` field also accepts an email address.
-- The current implementation returns user data and also attempts to set auth cookies.
+- The service returns user details and generates both access and refresh tokens.
 
 ### `GET /verify-email/:token`
 
-Verifies the email token sent during registration.
+Verify the email token sent during registration.
 
-### `POST /logout`
+### `POST /refresh-token`
 
-Protected route that clears the stored refresh token for the authenticated user.
+Issue a fresh access token using the refresh token stored in cookies.
+
+### `GET /me`
+
+Return the currently authenticated user profile.
 
 Authentication:
 
 - Requires `Authorization: Bearer <access_token>`
 
+### `POST /logout`
+
+Invalidate the saved refresh token and clear auth cookies.
+
+Authentication:
+
+- Requires `Authorization: Bearer <access_token>`
+
+### `POST /forgot-password`
+
+Start the password reset flow.
+
+Request body:
+
+```json
+{
+  "email": "john@example.com"
+}
+```
+
+### `PUT /reset-password/:token`
+
+Reset the user password with a valid reset token.
+
+Request body:
+
+```json
+{
+  "password": "Secret7"
+}
+```
+
+Password rules:
+
+- Minimum 6 characters
+- Must include at least one uppercase letter
+- Must include at least one digit from `0` to `7`
+
+## Auth Flow Summary
+
+1. Register a user with `/register`.
+2. Open the verification link sent by email.
+3. Log in with `/login`.
+4. Use the access token for protected routes such as `/me` and `/logout`.
+5. Use `/refresh-token` when the access token expires.
+6. Use `/forgot-password` and `/reset-password/:token` for password recovery.
+
 ## Notes
 
-- Users must verify their email before they can log in.
-- Verification tokens are stored as hashes in the database.
-- The `users` table includes fields for verification, refresh tokens, and password reset metadata.
-- The project currently contains a local `.env` file. If those credentials are real, rotate them before sharing or deploying this repository.
+- Verification, refresh, and password reset tokens are stored as hashes in the database.
+- The server reads cookies with `cookie-parser` and expects bearer auth for protected routes.
+- The app listens on `PORT` and defaults to `7000|5000` when the variable is missing.
+- If the local `.env` contains real secrets, rotate them before sharing or deploying the project.
