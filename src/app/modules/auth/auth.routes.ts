@@ -12,5 +12,6 @@ router.post("/login", validate(LoginDto), controller.login);
 router.post("/logout", authenticate, controller.logout);
 router.get("/verify-email/:token", controller.verifyEmail);
 router.post("/refresh-token", controller.refresh);
+router.get("/me", authenticate, controller.getMe);
 
 export default router;

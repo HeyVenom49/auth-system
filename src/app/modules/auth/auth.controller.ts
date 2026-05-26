@@ -48,4 +48,9 @@ const refresh = async (req: Request, res: Response): Promise<void> => {
   ApiResponse.ok(res, "Token refresh", { accessToken });
 };
 
-export { register, login, verifyEmail, logout, refresh };
+const getMe = async (req: Request, res: Response): Promise<void> => {
+  const user = await service.getMe(req.user.id);
+  ApiResponse.ok(res, "User Profile", user);
+};
+
+export { register, login, verifyEmail, logout, refresh, getMe };

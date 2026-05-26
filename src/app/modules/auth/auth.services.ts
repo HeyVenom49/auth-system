@@ -181,4 +181,21 @@ const refresh = async (token: string) => {
   return { accessToken };
 };
 
-export { register, signin, verifyEmail, logout, refresh };
+const getMe = async (id: number) => {
+  const [user] = await db
+    .select({
+      id: users.id,
+      username: users.username,
+      email: users.email,
+      role: users.role,
+      isVerified: users.isVerified,
+      createdAt: users.createdAt,
+    })
+    .from(users)
+    .where(eq(users.id, id))
+    .limit(1);
+  if (!user) throw ApiError.notFound("User not found");
+  return user;
+};
+
+export { register, signin, verifyEmail, logout, refresh, getMe };
